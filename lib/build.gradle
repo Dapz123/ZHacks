@@ -55,7 +55,7 @@ afterEvaluate {
         def variantCapped = variant.name.capitalize()
         def variantLowered = variant.name.toLowerCase()
 
-        def zipName = "${moduleName}(${moduleVersion})-${variantLowered}.zip"
+        def zipName = "magisk_module_$variantLowered.zip"
         def magiskDir = file("$rootDir/lib/build/module/magisk_module_$variantLowered")
 
         task("createModuleFile${variantCapped}", type: Sync) {
