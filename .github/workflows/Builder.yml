@@ -18,4 +18,4 @@ jobs:
     - uses: actions/upload-artifact@v3
       with:
         name: module_release
-        path: /lib/build/module/magisk_module_release
+        path: /lib/build/module/magisk_module_release/
