@@ -1,0 +1,111 @@
+import java.nio.file.Paths
+import java.nio.file.Files
+import org.apache.tools.ant.filters.FixCrLfFilter
+
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    namespace 'com.zyfun.menu'
+    compileSdk 33
+    ndkVersion "24.0.8215888"
+    
+    defaultConfig {
+        minSdk 24
+        targetSdk 33
+        
+        externalNativeBuild {
+            cmake {
+                cppFlags '-std=c++17'
+                // arguments "-DLIB_NAME:STRING="
+            }
+        }
+        
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.25.1"
+        }
+    }
+}
+
+ext {
+    moduleName = "ZHACKS"
+    moduleVersion = "v1.1.4"
+    outZip = file("$rootDir/lib/build/module/module_${moduleVersion}")
+}
+
+
+afterEvaluate {
+    android.libraryVariants.forEach { variant ->
+        def variantCapped = variant.name.capitalize()
+        def variantLowered = variant.name.toLowerCase()
+
+        def zipName = "${moduleName}(${moduleVersion})-${variantLowered}.zip"
+        def magiskDir = file("$rootDir/lib/build/module/module_${moduleVersion}/magisk_module_$variantLowered")
+
+        task("createModuleFile${variantCapped}", type: Sync) {
+            dependsOn("assemble$variantCapped")
+
+            def templatePath = "$rootDir/lib/magisk"
+            into magiskDir
+            
+            from(templatePath)
+            
+            from("$buildDir/intermediates/stripped_native_libs/$variantLowered/out/lib") {
+                into 'lib'
+            }
+            
+            doLast {
+                file("$magiskDir/zygisk").mkdir()
+                fileTree("$magiskDir/lib").visit { f ->
+                    if (!f.directory) return
+                    def srcPath = Paths.get("${f.file.absolutePath}/libZHACK.so")
+                    def dstPath = Paths.get("$magiskDir/zygisk/${f.path}.so")
+                    Files.move(srcPath, dstPath)
+                }
+                new File("$magiskDir/lib").deleteDir()
+            }
+        }
+
+        task("zip${variantCapped}", type: Zip) {
+            dependsOn("createModuleFile${variantCapped}")
+            from magiskDir
+            archiveFileName.set(zipName)
+            destinationDirectory.set(outZip)
+        }
+
+        task("push${variantCapped}", type: Exec) {
+            dependsOn("zip${variantCapped}")
+            workingDir magiskDir
+            commandLine android.adbExecutable, "push", zipName, "/data/local/tmp/"
+        }
+
+        task("flash${variantCapped}", type: Exec) {
+            dependsOn("push${variantCapped}")
+            commandLine android.adbExecutable, "shell", "su", "-c",
+                    "magisk --install-module /data/local/tmp/${zipName}"
+        }
+
+        task("flashAndReboot${variantCapped}", type: Exec) {
+            dependsOn("flash${variantCapped}")
+            commandLine android.adbExecutable, "shell", "reboot"
+        }
+
+        variant.assembleProvider.get().finalizedBy("zip${variantCapped}")
+    }
+}
