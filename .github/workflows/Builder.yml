@@ -16,5 +16,6 @@ jobs:
         chmod +x ./gradlew
         ./gradlew :module:assembleRelease
     - uses: actions/upload-artifact@v3
-      name: module_release
-      path: /lib/build/module/magisk_module_release
+      with:
+        name: module_release
+        path: /lib/build/module/magisk_module_release
