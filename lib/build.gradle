@@ -46,7 +46,7 @@ android {
 ext {
     moduleName = "ZHACKS"
     moduleVersion = "v1.1.4"
-    outZip = file("$rootDir/lib/build/module/module_${moduleVersion}")
+    outZip = file("$rootDir/lib/build/module")
 }
 
 
@@ -56,7 +56,7 @@ afterEvaluate {
         def variantLowered = variant.name.toLowerCase()
 
         def zipName = "${moduleName}(${moduleVersion})-${variantLowered}.zip"
-        def magiskDir = file("$rootDir/lib/build/module/module_${moduleVersion}/magisk_module_$variantLowered")
+        def magiskDir = file("$rootDir/lib/build/module/magisk_module_$variantLowered")
 
         task("createModuleFile${variantCapped}", type: Sync) {
             dependsOn("assemble$variantCapped")
