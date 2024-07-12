@@ -14,7 +14,7 @@ jobs:
         cache: gradle
     - run: |
         chmod +x ./gradlew
-        ./gradlew :module:assembleRelease
+        ./gradlew :lib:assembleRelease
     - uses: actions/upload-artifact@v3
       with:
         name: module_release
